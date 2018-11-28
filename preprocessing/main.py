@@ -2,6 +2,7 @@ import os
 import math
 import csv
 import string
+import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -12,41 +13,45 @@ def main():
     # Dataset Reading
     doc = {}
     N = 1
-    limit = 95271
-    with open("../dataset/democratvsrepublicantweets/output.csv", newline='') as f:
-        reader = csv.reader(f)
+    c1 = c2 = c3 = c4 = 0
+    limit = 1250
+    with open("../dataset/democratvsrepublicantweets/output.csv",encoding="Latin-1") as f:
+        reader = csv.reader(f, delimiter=',')
         for row in reader:
-            print(N)
-            if N == limit:
+            if c1 == limit and c2 == limit:
                 break
 
-            if row[0] == "Republican":
+            if row[0] == "Republican" and c1 < limit:
                 doc[N] = preprocess(row[2])
                 doc[N].append("real republican")
                 N += 1
-            elif row[0] == "Democrat":
+                c1 += 1
+            elif row[0] == "Democrat" and c2 < limit:
                 doc[N] = preprocess(row[2])
                 doc[N].append("real democrat")
                 N += 1
+                c2 += 1
             else:
                 continue
 
-    # with open("../dataset/russian-troll-tweets/IRAhandle_tweets_1.csv", newline='') as f:
-    #     reader = csv.reader(f)
-    #     for row in reader:
-    #         if N == limit*2:
-    #             break
+    with open("../dataset/russian-troll-tweets/IRAhandle_tweets_1.csv",encoding="Latin-1") as f:
+        reader = csv.reader(f, delimiter=',')
+        for row in reader:
+            if c3 == limit and c4 == limit:
+                break
 
-    #         if row[len(row)-1] == "RightTroll":
-    #             doc[N] = preprocess(row[2])
-    #             doc[N].append("fake republican")
-    #             N += 1
-    #         elif row[len(row)-1] == "LeftTroll":
-    #             doc[N] = preprocess(row[2])
-    #             doc[N].append("fake democrat")
-    #             N += 1
-    #         else:
-    #             continue
+            if row[len(row)-1] == "RightTroll" and c3 < limit:
+                doc[N] = preprocess(row[2])
+                doc[N].append("fake republican")
+                N += 1
+                c3 += 1
+            elif row[len(row)-1] == "LeftTroll" and c4 < limit:
+                doc[N] = preprocess(row[2])
+                doc[N].append("fake democrat")
+                N += 1
+                c4 += 1
+            else:
+                continue
 
     # Term Frequency
     corpus = {}
@@ -68,11 +73,11 @@ def main():
         with open('../vector_space.csv', 'w', newline='') as csv_td:
             writer = csv.writer(csv_td)
             writer.writerow(list(corpus.keys()))
-            for i in range(N):
-                d = int(i)
+            for d in doc:
                 row = []
                 for w in corpus:
                     row.append(corpus[w][d])
+                row.append(doc[d][len(doc[d])-1])
                 writer.writerow(row)
 
 # preprocess of document
@@ -93,17 +98,23 @@ def tokenize( doc ):
 
     # tokenizing
     tokenized = word_tokenize(doc)
+    new_tokenized = []
+    i = 1
+    while i < len(tokenized):
+        if tokenized[i-1] == '#':
+            new_tokenized.append('#'+tokenized[i])
+        elif tokenized[i] != '#':
+            new_tokenized.append(tokenized[i])
+        i+=1
 
-    return tokenized
+
+    return new_tokenized
 
 # normalization and filtration of document
 def normalize( tokenized ):
 
-    #normalizing
-    # normalized = [ unidecode.unidecode(w.decode('utf8')) for w in tokenized ]
-
     # remove punctuations
-    normalized = [ word for word in tokenized if word.isalpha() ]
+    normalized = [ word for word in tokenized if word.isalpha() or word[0] is '#' ]
 
     # removing stopwords
     stop_words = set(stopwords.words('english'))
