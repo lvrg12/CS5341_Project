@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
+from sklearn.decomposition import PCA
 
 def main():
 
@@ -67,6 +68,11 @@ def main():
                     corpus[w][i+1] = 0
                 corpus[w][d] = 1
 
+    model = PCA(n_components=5)
+    model.fit_transform(corpus)
+    print(corpus)
+
+    
 
     # Vector Space
     if not os.path.exists("vector_space.csv"):
